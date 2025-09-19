@@ -62,11 +62,19 @@ func WithModel(model anthropic.Model) Option {
 }
 
 func GetAnthropicAPIKeyFromEnv() string {
-	return os.Getenv("ANTHROPIC_API_KEY")
+	// Support both ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN
+	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" {
+		return apiKey
+	}
+	return os.Getenv("ANTHROPIC_AUTH_TOKEN")
 }
 
 func GetAnthropicModelFromEnv() anthropic.Model {
 	return anthropic.Model(os.Getenv("ANTHROPIC_MODEL"))
+}
+
+func GetAnthropicBaseURLFromEnv() string {
+	return os.Getenv("ANTHROPIC_BASE_URL")
 }
 
 // generateSuffix generates a random hex string between `0000` and `ffff`.
@@ -126,7 +134,18 @@ func Generate(ctx context.Context, prompt string, opts ...Option) (string, error
 	}
 
 	anthropicOptions := anthropic.DefaultClientOptions()
-	anthropicOptions = append(anthropicOptions, anthropicoption.WithAPIKey(o.apiKey))
+	// Support custom base URL for alternative providers
+	if baseURL := GetAnthropicBaseURLFromEnv(); baseURL != "" {
+		anthropicOptions = append(anthropicOptions, anthropicoption.WithBaseURL(baseURL))
+	}
+	// Use the appropriate authentication method based on which env var was set
+	// ANTHROPIC_API_KEY uses X-Api-Key header, ANTHROPIC_AUTH_TOKEN uses Bearer token
+	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" && apiKey == o.apiKey {
+		anthropicOptions = append(anthropicOptions, anthropicoption.WithAPIKey(o.apiKey))
+	} else {
+		// Use auth token for ANTHROPIC_AUTH_TOKEN or other providers
+		anthropicOptions = append(anthropicOptions, anthropicoption.WithAuthToken(o.apiKey))
+	}
 	anthropicClient := anthropic.NewClient(anthropicOptions...)
 
 	stream, err := anthropicDataStream(ctx, anthropicClient, o.model, conversation)

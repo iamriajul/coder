@@ -113,7 +113,17 @@ We plan to introduce more customization options in future releases.
 
 ## Automatically name your tasks
 
-Coder can automatically generate a name your tasks if you set the `ANTHROPIC_API_KEY` environment variable on the Coder server. Otherwise, tasks will be given randomly generated names.
+Coder can automatically generate a name for your tasks if you set one of the following environment variables on the Coder server:
+
+- `ANTHROPIC_API_KEY` - Your official Anthropic API key (takes precedence, uses X-Api-Key header)
+- `ANTHROPIC_AUTH_TOKEN` - Alternative authentication token for compatible providers (uses Bearer token authentication)
+
+Additionally, you can use custom Anthropic-compatible API providers by setting:
+- `ANTHROPIC_BASE_URL` - Custom base URL for Anthropic-compatible providers (e.g., z.ai, LiteLLM proxies)
+
+**Note**: When `ANTHROPIC_API_KEY` is set, it uses Anthropic's standard X-Api-Key header authentication. When using `ANTHROPIC_AUTH_TOKEN` (or when only it is set), Bearer token authentication is used, which is common for alternative providers and proxies.
+
+Without these environment variables, tasks will be given randomly generated names.
 
 ## Opting out of Tasks
 
